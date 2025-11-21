@@ -1,0 +1,21 @@
+{
+  "name": "acompanhamento-lideres",
+  "version": "1.0.0",
+  "description": "Sistema de Acompanhamento de Líderes - Avaliação de Padrões de Liderança",
+  "main": "index.js",
+  "scripts": {
+    "start": "python3 -m http.server 3000",
+    "dev": "python3 -m http.server 3000"
+  },
+  "keywords": [
+    "liderança",
+    "acompanhamento",
+    "avaliação",
+    "padrões"
+  ],
+  "author": "Eduardo Argollo",
+  "license": "MIT",
+  "engines": {
+    "node": "18.x"
+  }
+}

@@ -1,0 +1,1358 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Acompanhamento de Líderes</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+        
+        header h1 {
+            color: #1F4E78;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        header p {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: #1F4E78;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #163a5f;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(31, 78, 120, 0.3);
+        }
+        
+        .btn-secondary {
+            background: #4472C4;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #3558a0;
+        }
+        
+        .btn-success {
+            background: #70AD47;
+            color: white;
+        }
+        
+        .btn-danger {
+            background: #C5504C;
+            color: white;
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card h3 {
+            color: #1F4E78;
+            margin-bottom: 15px;
+            font-size: 16px;
+            border-bottom: 2px solid #4472C4;
+            padding-bottom: 10px;
+        }
+        
+        .stat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .stat:last-child {
+            border-bottom: none;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .stat-value {
+            color: #1F4E78;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-bottom: 20px;
+        }
+        
+        .table-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        
+        thead {
+            background: #1F4E78;
+            color: white;
+        }
+        
+        th {
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        tbody tr:hover {
+            background: #f5f5f5;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-good {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-danger {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            border-left: 4px solid #ffc107;
+        }
+        
+        .alert-danger {
+            background: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid #dc3545;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            overflow-y: auto;
+        }
+        
+        .modal-content {
+            background: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #4472C4;
+            padding-bottom: 15px;
+        }
+        
+        .close {
+            font-size: 28px;
+            font-weight: bold;
+            color: #aaa;
+            cursor: pointer;
+        }
+        
+        .close:hover {
+            color: #000;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 600;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #4472C4;
+            box-shadow: 0 0 5px rgba(68, 114, 196, 0.3);
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #eee;
+            flex-wrap: wrap;
+        }
+        
+        .tab-btn {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .tab-btn.active {
+            color: #1F4E78;
+            border-bottom-color: #4472C4;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .rating-input {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .star {
+            font-size: 24px;
+            cursor: pointer;
+            color: #ddd;
+            transition: color 0.2s;
+        }
+        
+        .star:hover,
+        .star.active {
+            color: #ffc107;
+        }
+
+        .relatorio-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .relatorio-tab-btn {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .relatorio-tab-btn.active {
+            color: #1F4E78;
+            border-bottom-color: #4472C4;
+        }
+
+        .relatorio-content {
+            display: none;
+        }
+
+        .relatorio-content.active {
+            display: block;
+        }
+
+        .relatorio-select {
+            margin-bottom: 20px;
+        }
+
+        .padrao-item {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #4472C4;
+            page-break-inside: avoid;
+        }
+
+        .padrao-titulo {
+            color: #1F4E78;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .padrao-nota {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .nota-barra {
+            flex: 1;
+            background: #eee;
+            border-radius: 5px;
+            height: 25px;
+            overflow: hidden;
+        }
+
+        .nota-preenchida {
+            height: 100%;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        .recomendacoes {
+            background: #f0f8ff;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 3px solid #70AD47;
+        }
+
+        .recomendacoes h5 {
+            color: #70AD47;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .recomendacoes ul {
+            margin-left: 20px;
+            color: #333;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .resumo-geral {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 30px;
+            border: 2px solid #4472C4;
+        }
+
+        .resumo-geral h3 {
+            color: #1F4E78;
+            margin-bottom: 15px;
+            border: none;
+            padding: 0;
+        }
+
+        .resumo-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .resumo-item:last-child {
+            border-bottom: none;
+        }
+
+        @media print {
+            body {
+                background: white;
+            }
+            .controls, .btn, .tabs, .relatorio-tabs, .modal {
+                display: none !important;
+            }
+            .padrao-item {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 Sistema de Acompanhamento de Líderes</h1>
+            <p>Monitore o desempenho dos líderes em relação aos padrões de liderança</p>
+            <div class="controls">
+                <button class="btn btn-primary" onclick="openAddLiderModal()">+ Adicionar Líder</button>
+                <button class="btn btn-secondary" onclick="openAddReuniao()">+ Registrar Reunião</button>
+                <button class="btn btn-success" onclick="abrirRelatorios()">📄 Relatórios</button>
+                <button class="btn btn-secondary" onclick="exportarCSV()">📥 Exportar CSV</button>
+            </div>
+        </header>
+        
+        <div class="dashboard">
+            <div class="card">
+                <h3>📈 Estatísticas Gerais</h3>
+                <div class="stat">
+                    <span class="stat-label">Total de Líderes</span>
+                    <span class="stat-value" id="totalLideres">0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Presença Média</span>
+                    <span class="stat-value" id="presenciaMedia">0%</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Média de Padrões</span>
+                    <span class="stat-value" id="mediaPardroes">0.0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Reuniões Registradas</span>
+                    <span class="stat-value" id="totalReunioes">0</span>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3>⚠️ Alertas</h3>
+                <div id="alertas-container">
+                    <p style="color: #999; font-size: 14px;">Nenhum alerta no momento</p>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3>🎯 Padrões Mais Críticos</h3>
+                <div id="padroes-criticos">
+                    <p style="color: #999; font-size: 14px;">Sem dados</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card" style="margin-bottom: 30px;">
+            <h3>📊 Gráfico de Presença por Líder</h3>
+            <div class="chart-container">
+                <canvas id="presencaChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="table-container">
+            <h3 style="margin-bottom: 20px; color: #1F4E78;">📋 Acompanhamento de Líderes</h3>
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('tabela')">Tabela</button>
+                <button class="tab-btn" onclick="switchTab('detalhes')">Detalhes</button>
+            </div>
+            
+            <div id="tabela" class="tab-content active">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Email</th>
+                            <th>Presença (%)</th>
+                            <th>Média Padrões</th>
+                            <th>Reuniões</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lideres-table">
+                        <tr>
+                            <td colspan="7" style="text-align: center; color: #999;">Nenhum líder cadastrado</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div id="detalhes" class="tab-content">
+                <div id="detalhes-container">
+                    <p style="color: #999; text-align: center;">Selecione um líder para ver detalhes</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Adicionar Líder -->
+    <div id="addLiderModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Adicionar Novo Líder</h2>
+                <span class="close" onclick="closeModal('addLiderModal')">&times;</span>
+            </div>
+            <form onsubmit="adicionarLider(event)">
+                <div class="form-group">
+                    <label>Nome Completo</label>
+                    <input type="text" id="liderNome" required>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="liderEmail" required>
+                </div>
+                <div class="form-group">
+                    <label>Telefone</label>
+                    <input type="tel" id="liderTelefone">
+                </div>
+                <div class="form-group">
+                    <label>Data de Início</label>
+                    <input type="date" id="liderDataInicio" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Salvar Líder</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Modal Registrar Reunião -->
+    <div id="addReuniaoModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Registrar Reunião</h2>
+                <span class="close" onclick="closeModal('addReuniaoModal')">&times;</span>
+            </div>
+            <form onsubmit="adicionarReuniao(event)">
+                <div class="form-group">
+                    <label>Data</label>
+                    <input type="date" id="reuniaoData" required>
+                </div>
+                <div class="form-group">
+                    <label>Líder</label>
+                    <select id="reuniaoLider" required>
+                        <option value="">Selecione um líder...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Presente?</label>
+                    <select id="reuniaoPresente" required>
+                        <option value="">Selecione...</option>
+                        <option value="sim">Sim</option>
+                        <option value="nao">Não</option>
+                        <option value="justificado">Justificado</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Notas</label>
+                    <textarea id="reuniaoNotas" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Registrar</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Modal Avaliar Padrões -->
+    <div id="avaliarModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Avaliar Padrões - <span id="avaliarLiderNome"></span></h2>
+                <span class="close" onclick="closeModal('avaliarModal')">&times;</span>
+            </div>
+            <form onsubmit="salvarAvaliacoes(event)">
+                <div id="padroes-form"></div>
+                <div class="form-group">
+                    <label>Observações Gerais</label>
+                    <textarea id="observacoes" rows="4"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Salvar Avaliações</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Relatórios -->
+    <div id="relatoriosModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Relatórios</h2>
+                <span class="close" onclick="closeModal('relatoriosModal')">&times;</span>
+            </div>
+
+            <div class="relatorio-tabs">
+                <button class="relatorio-tab-btn active" onclick="switchRelatorioTab('geral')">📊 Relatório Geral</button>
+                <button class="relatorio-tab-btn" onclick="switchRelatorioTab('individual')">👤 Relatório Individual</button>
+            </div>
+
+            <!-- Relatório Geral -->
+            <div id="geral" class="relatorio-content active">
+                <h3 style="color: #1F4E78; margin-bottom: 15px;">Comparativo de Padrões - Todos os Líderes</h3>
+                <p style="color: #666; margin-bottom: 15px; font-size: 13px;">Este relatório é confidencial e destina-se apenas para sua análise comparativa.</p>
+                <div class="chart-container" style="height: 400px;">
+                    <canvas id="relatorioGeralChart"></canvas>
+                </div>
+                <button class="btn btn-success" onclick="exportarRelatorioPDF('geral')" style="margin-top: 15px;">📄 Baixar PDF</button>
+            </div>
+
+            <!-- Relatório Individual -->
+            <div id="individual" class="relatorio-content">
+                <div class="relatorio-select">
+                    <label>Selecione um Líder:</label>
+                    <select id="liderSelect" onchange="carregarRelatorioIndividual()">
+                        <option value="">Escolha um líder...</option>
+                    </select>
+                </div>
+                <div id="relatorioIndividualContainer">
+                    <p style="color: #999; text-align: center;">Selecione um líder para ver o relatório</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Dados simulados
+        let lideres = JSON.parse(localStorage.getItem('lideres')) || [];
+        let reunioes = JSON.parse(localStorage.getItem('reunioes')) || [];
+        let avaliacoes = JSON.parse(localStorage.getItem('avaliacoes')) || {};
+        
+        const padroes = [
+            "Ser salvo por Jesus",
+            "Ser batizado nas águas",
+            "Viver com integridade e santidade",
+            "Ser honesto",
+            "Fidelidade Conjugal/Pureza",
+            "Ser submisso à liderança",
+            "Ser comprometido e responsável",
+            "Estar no programa de Líderes",
+            "Participar do discipulado",
+            "Participar ativamente das reuniões",
+            "Respeitar seus líderes",
+            "Ser pronto a servir",
+            "Prática de oração em línguas",
+            "Meditação na Palavra de Deus",
+            "Tratar as pessoas com amor e respeito",
+            "Não falar mal dos outros",
+            "Estar disposto a prestar contas"
+        ];
+
+        const recomendacoes = [
+            {
+                titulo: "Ser salvo por Jesus",
+                recomendacoes: [
+                    "Aprofunde seu relacionamento pessoal com Cristo através de oração diária",
+                    "Participe de estudos bíblicos sobre salvação e graça",
+                    "Compartilhe seu testemunho de salvação com outros líderes",
+                    "Busque orientação pastoral para fortalecer sua fé"
+                ]
+            },
+            {
+                titulo: "Ser batizado nas águas",
+                recomendacoes: [
+                    "Se ainda não foi batizado, converse com o pastor sobre agendamento",
+                    "Reflita sobre o significado do batismo em sua vida",
+                    "Compartilhe seu testemunho batismal com a comunidade",
+                    "Ore pela fidelidade ao compromisso assumido no batismo"
+                ]
+            },
+            {
+                titulo: "Viver com integridade e santidade",
+                recomendacoes: [
+                    "Examine suas ações e palavras diariamente à luz da Palavra de Deus",
+                    "Busque viver de forma coerente entre o que pensa, fala e faz",
+                    "Evite situações que possam comprometer sua integridade",
+                    "Peça accountability a outros líderes sobre sua vida pessoal"
+                ]
+            },
+            {
+                titulo: "Ser honesto",
+                recomendacoes: [
+                    "Pratique transparência em todas as suas comunicações",
+                    "Admita erros e falhas com humildade",
+                    "Evite exageros ou mentiras mesmo que pareçam pequenas",
+                    "Cultive a confiança através da consistência e veracidade"
+                ]
+            },
+            {
+                titulo: "Fidelidade Conjugal/Pureza",
+                recomendacoes: [
+                    "Fortaleça seu relacionamento conjugal através de qualidade de tempo",
+                    "Estabeleça limites saudáveis em relacionamentos com outras pessoas",
+                    "Busque aconselhamento pastoral se necessário",
+                    "Pratique a pureza em pensamentos, palavras e ações"
+                ]
+            },
+            {
+                titulo: "Ser submisso à liderança",
+                recomendacoes: [
+                    "Reconheça a autoridade espiritual da liderança da igreja",
+                    "Siga as orientações e direcionamentos com disposição",
+                    "Expresse suas preocupações de forma respeitosa",
+                    "Apoie as decisões da liderança mesmo quando discordar"
+                ]
+            },
+            {
+                titulo: "Ser comprometido e responsável",
+                recomendacoes: [
+                    "Cumpra todos os compromissos assumidos com excelência",
+                    "Seja pontual e confiável em todas as atividades",
+                    "Comunique antecipadamente se não puder cumprir algum compromisso",
+                    "Busque melhorar continuamente seu desempenho"
+                ]
+            },
+            {
+                titulo: "Estar no programa de Líderes",
+                recomendacoes: [
+                    "Participe regularmente das reuniões mensais com o pastor",
+                    "Complete pelo menos uma aula de formação por semana",
+                    "Estude e aplique o conteúdo aprendido em sua vida",
+                    "Compartilhe seus aprendizados com outros líderes"
+                ]
+            },
+            {
+                titulo: "Participar do discipulado",
+                recomendacoes: [
+                    "Envolva-se ativamente no processo de discipulado da igreja",
+                    "Participe de todas as reuniões de discipulado convocadas",
+                    "Busque discipular outros líderes em desenvolvimento",
+                    "Aplique os princípios de discipulado em sua vida pessoal"
+                ]
+            },
+            {
+                titulo: "Participar ativamente das reuniões",
+                recomendacoes: [
+                    "Marque presença em todas as reuniões de liderança",
+                    "Comunique antecipadamente se não puder comparecer",
+                    "Participe ativamente das discussões e decisões",
+                    "Chegue no horário e permaneça até o final"
+                ]
+            },
+            {
+                titulo: "Respeitar seus líderes",
+                recomendacoes: [
+                    "Reconheça a autoridade e o chamado de seus líderes",
+                    "Evite críticas públicas ou privadas desrespeitosas",
+                    "Ore pelos seus líderes regularmente",
+                    "Apoie-os em suas decisões mesmo diante de imperfeições"
+                ]
+            },
+            {
+                titulo: "Ser pronto a servir",
+                recomendacoes: [
+                    "Cultive um coração de servo em todas as situações",
+                    "Ofereça-se voluntariamente para ajudar quando necessário",
+                    "Coloque as necessidades dos outros acima das suas",
+                    "Busque oportunidades para servir com excelência"
+                ]
+            },
+            {
+                titulo: "Prática de oração em línguas",
+                recomendacoes: [
+                    "Dedique pelo menos uma hora diária para oração em línguas",
+                    "Busque orientação sobre o batismo no Espírito Santo",
+                    "Pratique a oração em línguas em seus momentos de devoção",
+                    "Participe de momentos de oração corporativa em línguas"
+                ]
+            },
+            {
+                titulo: "Meditação na Palavra de Deus",
+                recomendacoes: [
+                    "Estabeleça um tempo diário fixo para ler e meditar na Bíblia",
+                    "Use um plano de leitura bíblica estruturado",
+                    "Reflita sobre como os ensinamentos se aplicam à sua vida",
+                    "Anote insights e revelações que Deus lhe der"
+                ]
+            },
+            {
+                titulo: "Tratar as pessoas com amor e respeito",
+                recomendacoes: [
+                    "Demonstre o amor de Cristo em cada interação",
+                    "Ouça com empatia e busque compreender o outro",
+                    "Trate todos com dignidade independente de sua posição",
+                    "Cultive relacionamentos baseados em respeito mútuo"
+                ]
+            },
+            {
+                titulo: "Não falar mal dos outros",
+                recomendacoes: [
+                    "Evite comentários negativos sobre outras pessoas",
+                    "Se tiver preocupações, converse diretamente com a pessoa",
+                    "Busque sempre ver o melhor nas pessoas",
+                    "Corrija com amor e nunca com malícia"
+                ]
+            },
+            {
+                titulo: "Estar disposto a prestar contas",
+                recomendacoes: [
+                    "Seja transparente sobre sua vida pessoal, familiar e financeira",
+                    "Aceite feedback e críticas construtivas com humildade",
+                    "Preste contas regularmente a seus líderes",
+                    "Esteja aberto a mudanças e melhorias sugeridas"
+                ]
+            }
+        ];
+        
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', function() {
+            atualizarDashboard();
+            carregarLideres();
+            atualizarGraficos();
+        });
+        
+        function atualizarDashboard() {
+            document.getElementById('totalLideres').textContent = lideres.length;
+            document.getElementById('totalReunioes').textContent = reunioes.length;
+            
+            if (lideres.length > 0) {
+                const presenciaMedia = calcularPresenciaMedia();
+                const mediaPardroes = calcularMediaPardroes();
+                document.getElementById('presenciaMedia').textContent = presenciaMedia.toFixed(1) + '%';
+                document.getElementById('mediaPardroes').textContent = mediaPardroes.toFixed(1);
+            }
+            
+            atualizarAlertas();
+        }
+        
+        function calcularPresenciaMedia() {
+            if (lideres.length === 0) return 0;
+            let total = 0;
+            lideres.forEach(l => {
+                const presencas = reunioes.filter(r => r.lider === l.id && r.presente === 'sim').length;
+                const totalReunioes = reunioes.filter(r => r.lider === l.id).length;
+                total += totalReunioes > 0 ? (presencas / totalReunioes) * 100 : 0;
+            });
+            return total / lideres.length;
+        }
+        
+        function calcularMediaPardroes() {
+            if (Object.keys(avaliacoes).length === 0) return 0;
+            let total = 0;
+            let count = 0;
+            Object.values(avaliacoes).forEach(av => {
+                av.forEach(nota => {
+                    total += nota;
+                    count++;
+                });
+            });
+            return count > 0 ? total / count : 0;
+        }
+        
+        function atualizarAlertas() {
+            const container = document.getElementById('alertas-container');
+            container.innerHTML = '';
+            
+            let alertas = [];
+            
+            lideres.forEach(l => {
+                const presencas = reunioes.filter(r => r.lider === l.id && r.presente === 'sim').length;
+                const totalReunioes = reunioes.filter(r => r.lider === l.id).length;
+                const presenca = totalReunioes > 0 ? (presencas / totalReunioes) * 100 : 100;
+                
+                if (presenca < 70 && totalReunioes > 0) {
+                    alertas.push({
+                        tipo: 'warning',
+                        msg: `${l.nome}: Presença baixa (${presenca.toFixed(0)}%)`
+                    });
+                }
+                
+                const notas = avaliacoes[l.id] || [];
+                const media = notas.length > 0 ? notas.reduce((a, b) => a + b) / notas.length : 0;
+                if (media < 3 && notas.length > 0) {
+                    alertas.push({
+                        tipo: 'danger',
+                        msg: `${l.nome}: Média de padrões crítica (${media.toFixed(1)}/5)`
+                    });
+                }
+            });
+            
+            if (alertas.length === 0) {
+                container.innerHTML = '<p style="color: #999; font-size: 14px;">✓ Nenhum alerta no momento</p>';
+            } else {
+                alertas.forEach(a => {
+                    const div = document.createElement('div');
+                    div.className = `alert alert-${a.tipo}`;
+                    div.innerHTML = `<span>⚠️</span> ${a.msg}`;
+                    container.appendChild(div);
+                });
+            }
+        }
+        
+        function openAddLiderModal() {
+            document.getElementById('addLiderModal').style.display = 'block';
+        }
+        
+        function openAddReuniao() {
+            document.getElementById('addReuniaoModal').style.display = 'block';
+            atualizarSelectLideres();
+        }
+
+        function abrirRelatorios() {
+            document.getElementById('relatoriosModal').style.display = 'block';
+            atualizarGraficosRelatorio();
+            atualizarSelectLideresRelatorio();
+        }
+        
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+        
+        function adicionarLider(e) {
+            e.preventDefault();
+            const novoLider = {
+                id: Date.now(),
+                nome: document.getElementById('liderNome').value,
+                email: document.getElementById('liderEmail').value,
+                telefone: document.getElementById('liderTelefone').value,
+                dataInicio: document.getElementById('liderDataInicio').value
+            };
+            lideres.push(novoLider);
+            localStorage.setItem('lideres', JSON.stringify(lideres));
+            closeModal('addLiderModal');
+            document.getElementById('addLiderModal').querySelector('form').reset();
+            atualizarDashboard();
+            carregarLideres();
+            atualizarGraficos();
+        }
+        
+        function adicionarReuniao(e) {
+            e.preventDefault();
+            const novaReuniao = {
+                id: Date.now(),
+                data: document.getElementById('reuniaoData').value,
+                lider: parseInt(document.getElementById('reuniaoLider').value),
+                presente: document.getElementById('reuniaoPresente').value,
+                notas: document.getElementById('reuniaoNotas').value
+            };
+            reunioes.push(novaReuniao);
+            localStorage.setItem('reunioes', JSON.stringify(reunioes));
+            closeModal('addReuniaoModal');
+            document.getElementById('addReuniaoModal').querySelector('form').reset();
+            atualizarDashboard();
+            carregarLideres();
+            atualizarGraficos();
+        }
+        
+        function atualizarSelectLideres() {
+            const select = document.getElementById('reuniaoLider');
+            select.innerHTML = '<option value="">Selecione um líder...</option>';
+            lideres.forEach(l => {
+                const option = document.createElement('option');
+                option.value = l.id;
+                option.textContent = l.nome;
+                select.appendChild(option);
+            });
+        }
+
+        function atualizarSelectLideresRelatorio() {
+            const select = document.getElementById('liderSelect');
+            select.innerHTML = '<option value="">Escolha um líder...</option>';
+            lideres.forEach(l => {
+                const option = document.createElement('option');
+                option.value = l.id;
+                option.textContent = l.nome;
+                select.appendChild(option);
+            });
+        }
+        
+        function carregarLideres() {
+            const tbody = document.getElementById('lideres-table');
+            if (lideres.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #999;">Nenhum líder cadastrado</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = '';
+            lideres.forEach(l => {
+                const presencas = reunioes.filter(r => r.lider === l.id && r.presente === 'sim').length;
+                const totalReunioes = reunioes.filter(r => r.lider === l.id).length;
+                const presenca = totalReunioes > 0 ? ((presencas / totalReunioes) * 100).toFixed(0) : 'N/A';
+                
+                const notas = avaliacoes[l.id] || [];
+                const media = notas.length > 0 ? (notas.reduce((a, b) => a + b) / notas.length).toFixed(1) : 'N/A';
+                
+                let status = 'status-good';
+                if (presenca !== 'N/A' && presenca < 70) status = 'status-warning';
+                if (media !== 'N/A' && media < 3) status = 'status-danger';
+                
+                const statusText = status === 'status-good' ? '✓ Bom' : status === 'status-warning' ? '⚠ Atenção' : '✗ Crítico';
+                
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${l.nome}</td>
+                    <td>${l.email}</td>
+                    <td>${presenca}%</td>
+                    <td>${media}/5</td>
+                    <td>${totalReunioes}</td>
+                    <td><span class="status-badge ${status}">${statusText}</span></td>
+                    <td>
+                        <button class="btn btn-secondary" onclick="abrirAvaliacoes(${l.id}, '${l.nome}')" style="padding: 5px 10px; font-size: 12px;">Avaliar</button>
+                        <button class="btn btn-danger" onclick="deletarLider(${l.id})" style="padding: 5px 10px; font-size: 12px;">Deletar</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+        
+        function abrirAvaliacoes(liderId, liderNome) {
+            document.getElementById('avaliarLiderNome').textContent = liderNome;
+            const formDiv = document.getElementById('padroes-form');
+            formDiv.innerHTML = '';
+            
+            padroes.forEach((p, idx) => {
+                const notaAtual = (avaliacoes[liderId] && avaliacoes[liderId][idx]) || 0;
+                const div = document.createElement('div');
+                div.className = 'form-group';
+                div.innerHTML = `
+                    <label>${p}</label>
+                    <div class="rating-input">
+                        ${[1, 2, 3, 4, 5].map(i => `
+                            <span class="star ${i <= notaAtual ? 'active' : ''}" onclick="selecionarEstrela(this, ${idx}, ${i})">★</span>
+                        `).join('')}
+                    </div>
+                `;
+                formDiv.appendChild(div);
+            });
+            
+            document.getElementById('avaliarModal').dataset.liderId = liderId;
+            document.getElementById('avaliarModal').style.display = 'block';
+        }
+        
+        function selecionarEstrela(el, padraoIdx, nota) {
+            const container = el.parentElement;
+            container.querySelectorAll('.star').forEach(s => s.classList.remove('active'));
+            for (let i = 0; i < nota; i++) {
+                container.children[i].classList.add('active');
+            }
+        }
+        
+        function salvarAvaliacoes(e) {
+            e.preventDefault();
+            const liderId = parseInt(document.getElementById('avaliarModal').dataset.liderId);
+            const notas = [];
+            
+            document.querySelectorAll('#padroes-form .rating-input').forEach(container => {
+                const activeStars = container.querySelectorAll('.star.active').length;
+                notas.push(activeStars);
+            });
+            
+            avaliacoes[liderId] = notas;
+            localStorage.setItem('avaliacoes', JSON.stringify(avaliacoes));
+            closeModal('avaliarModal');
+            atualizarDashboard();
+            carregarLideres();
+            atualizarGraficos();
+        }
+        
+        function deletarLider(liderId) {
+            if (confirm('Tem certeza que deseja deletar este líder?')) {
+                lideres = lideres.filter(l => l.id !== liderId);
+                localStorage.setItem('lideres', JSON.stringify(lideres));
+                atualizarDashboard();
+                carregarLideres();
+                atualizarGraficos();
+            }
+        }
+        
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function switchRelatorioTab(tabName) {
+            document.querySelectorAll('.relatorio-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.relatorio-tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+            
+            if (tabName === 'geral') {
+                setTimeout(() => atualizarGraficosRelatorio(), 100);
+            }
+        }
+        
+        let presencaChart, relatorioGeralChart;
+        
+        function atualizarGraficos() {
+            const nomes = lideres.map(l => l.nome);
+            const presencas = lideres.map(l => {
+                const presencas = reunioes.filter(r => r.lider === l.id && r.presente === 'sim').length;
+                const total = reunioes.filter(r => r.lider === l.id).length;
+                return total > 0 ? ((presencas / total) * 100).toFixed(0) : 0;
+            });
+            
+            // Gráfico de Presença
+            const ctxPresenca = document.getElementById('presencaChart').getContext('2d');
+            if (presencaChart) presencaChart.destroy();
+            presencaChart = new Chart(ctxPresenca, {
+                type: 'bar',
+                data: {
+                    labels: nomes,
+                    datasets: [{
+                        label: 'Presença (%)',
+                        data: presencas,
+                        backgroundColor: '#4472C4',
+                        borderColor: '#1F4E78',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    }
+                }
+            });
+        }
+
+        function atualizarGraficosRelatorio() {
+            const nomes = lideres.map(l => l.nome);
+            
+            const ctxGeral = document.getElementById('relatorioGeralChart');
+            if (!ctxGeral) return;
+            
+            const ctx = ctxGeral.getContext('2d');
+            if (relatorioGeralChart) relatorioGeralChart.destroy();
+            
+            relatorioGeralChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: padroes,
+                    datasets: lideres.map((l, idx) => ({
+                        label: l.nome,
+                        data: avaliacoes[l.id] || Array(padroes.length).fill(0),
+                        borderColor: `hsl(${idx * 360 / (lideres.length || 1)}, 70%, 50%)`,
+                        backgroundColor: `hsla(${idx * 360 / (lideres.length || 1)}, 70%, 50%, 0.1)`
+                    }))
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 5
+                        }
+                    }
+                }
+            });
+        }
+
+        function carregarRelatorioIndividual() {
+            const liderId = parseInt(document.getElementById('liderSelect').value);
+            if (!liderId) {
+                document.getElementById('relatorioIndividualContainer').innerHTML = '<p style="color: #999; text-align: center;">Selecione um líder para ver o relatório</p>';
+                return;
+            }
+
+            const lider = lideres.find(l => l.id === liderId);
+            const notas = avaliacoes[liderId] || [];
+
+            if (notas.length === 0) {
+                document.getElementById('relatorioIndividualContainer').innerHTML = '<p style="color: #999; text-align: center;">Nenhuma avaliação registrada para este líder</p>';
+                return;
+            }
+
+            let html = `
+                <div style="margin-bottom: 20px; padding: 20px; background: #f9f9f9; border-radius: 8px; border-left: 4px solid #4472C4;">
+                    <h3 style="color: #1F4E78; margin-bottom: 10px;">Relatório Individual de Avaliação</h3>
+                    <p><strong>Líder:</strong> ${lider.nome}</p>
+                    <p><strong>Email:</strong> ${lider.email}</p>
+                    <p><strong>Telefone:</strong> ${lider.telefone}</p>
+                    <p><strong>Data de Início:</strong> ${lider.dataInicio}</p>
+                    <p><strong>Data do Relatório:</strong> ${new Date().toLocaleDateString('pt-BR')}</p>
+                </div>
+            `;
+
+            padroes.forEach((p, idx) => {
+                const nota = notas[idx] || 0;
+                const percentual = (nota / 5) * 100;
+                const cor = nota >= 4 ? '#70AD47' : nota >= 3 ? '#FFC107' : '#C5504C';
+                const recomendacao = recomendacoes[idx];
+                
+                html += `
+                    <div class="padrao-item">
+                        <div class="padrao-titulo">${idx + 1}. ${p}</div>
+                        <div class="padrao-nota">
+                            <div class="nota-barra">
+                                <div class="nota-preenchida" style="width: ${percentual}%; background: ${cor};">
+                                    ${nota}/5
+                                </div>
+                            </div>
+                        </div>
+                        <div class="recomendacoes">
+                            <h5>📋 Recomendações para alcançar nota 5:</h5>
+                            <ul>
+                                ${recomendacao.recomendacoes.map(r => `<li>${r}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                `;
+            });
+
+            const mediaGeral = (notas.reduce((a, b) => a + b) / notas.length).toFixed(1);
+            const presencas = reunioes.filter(r => r.lider === liderId && r.presente === 'sim').length;
+            const totalReunioes = reunioes.filter(r => r.lider === liderId).length;
+            const presenca = totalReunioes > 0 ? ((presencas / totalReunioes) * 100).toFixed(0) : 'N/A';
+
+            html += `
+                <div class="resumo-geral">
+                    <h3>Resumo da Avaliação</h3>
+                    <div class="resumo-item">
+                        <span><strong>Média Geral de Padrões:</strong></span>
+                        <span style="font-weight: bold; color: ${mediaGeral >= 4 ? '#70AD47' : mediaGeral >= 3 ? '#FFC107' : '#C5504C'};">${mediaGeral}/5</span>
+                    </div>
+                    <div class="resumo-item">
+                        <span><strong>Presença em Reuniões:</strong></span>
+                        <span style="font-weight: bold;">${presenca}%</span>
+                    </div>
+                    <div class="resumo-item">
+                        <span><strong>Total de Reuniões:</strong></span>
+                        <span style="font-weight: bold;">${totalReunioes}</span>
+                    </div>
+                    <div class="resumo-item" style="margin-top: 15px; padding-top: 15px; border-top: 2px solid #4472C4;">
+                        <span><strong>Próximas Etapas:</strong></span>
+                        <span style="text-align: right;">Revisar recomendações e agendar acompanhamento</span>
+                    </div>
+                </div>
+
+                <button class="btn btn-success" onclick="exportarRelatorioPDF('individual')" style="margin-top: 20px;">📄 Baixar PDF para Imprimir</button>
+            `;
+
+            document.getElementById('relatorioIndividualContainer').innerHTML = html;
+        }
+        
+        function exportarRelatorioPDF(tipo) {
+            let elemento;
+            let nomeArquivo;
+
+            if (tipo === 'geral') {
+                elemento = document.querySelector('#geral');
+                nomeArquivo = 'relatorio_geral_lideres.pdf';
+            } else {
+                elemento = document.querySelector('#relatorioIndividualContainer');
+                nomeArquivo = `relatorio_individual_${document.getElementById('liderSelect').options[document.getElementById('liderSelect').selectedIndex].text}.pdf`;
+            }
+
+            const opt = {
+                margin: 10,
+                filename: nomeArquivo,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+            };
+            html2pdf().set(opt).from(elemento).save();
+        }
+        
+        function exportarCSV() {
+            let csv = 'Nome,Email,Telefone,Data Início,Presença (%),Média Padrões,Total Reuniões\n';
+            lideres.forEach(l => {
+                const presencas = reunioes.filter(r => r.lider === l.id && r.presente === 'sim').length;
+                const totalReunioes = reunioes.filter(r => r.lider === l.id).length;
+                const presenca = totalReunioes > 0 ? ((presencas / totalReunioes) * 100).toFixed(0) : 'N/A';
+                const notas = avaliacoes[l.id] || [];
+                const media = notas.length > 0 ? (notas.reduce((a, b) => a + b) / notas.length).toFixed(1) : 'N/A';
+                csv += `${l.nome},${l.email},${l.telefone},${l.dataInicio},${presenca},${media},${totalReunioes}\n`;
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'lideres.csv';
+            a.click();
+        }
+        
+        // Fechar modal ao clicar fora
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
